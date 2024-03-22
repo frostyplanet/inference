@@ -1,0 +1,18 @@
+FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-devel
+
+VOLUME /conf
+VOLUME /opt/inference
+ARG PIP_INDEX=https://pypi.org/simple
+ARG TZ=Asia/Shanghai
+
+RUN apt-get update && apt-get install -y vim git
+RUN python -m pip install --upgrade -i "$PIP_INDEX" pip
+
+ADD xinference/deploy/docker/sleep.sh /
+RUN echo $TZ>/etc/timezone && DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata && /bin/rm /etc/localtime && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+ADD xinference/deploy/docker/cu12-libnccl.so.2.18.1 /root/.config/vllm/nccl/cu12/libnccl.so.2.18.1
+RUN --mount=type=cache,target=/root/.cache/pip pip install -i "$PIP_INDEX" vllm==0.4.2 python-dotenv
+# Fix ray error
+RUN echo "export MKL_THREADING_LAYER=GNU" >> ~/.bashrc
+
+CMD bash /sleep.sh
