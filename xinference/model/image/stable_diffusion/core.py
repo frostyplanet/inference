@@ -193,7 +193,7 @@ class DiffusionModel(SDAPIDiffusionModelMixin):
             self._model_path,
             **self._kwargs,
         )
-        if self._kwargs.get("deepcache", True):
+        if self._kwargs.get("deepcache", False):
             # NOTE: DeepCache should be loaded first before cpu_offloading
             try:
                 from DeepCache import DeepCacheSDHelper
@@ -201,9 +201,8 @@ class DiffusionModel(SDAPIDiffusionModelMixin):
                 helper = DeepCacheSDHelper(pipe=self._model)
                 helper.set_params(cache_interval=3, cache_branch_id=0)
                 helper.enable()
-            except ImportError:
-                logger.debug("deepcache is not installed")
-                pass
+            except Exception as e:
+                logger.error(f"Cannot setup deepcache helper: {e}", exc_info=True)
 
         if self._kwargs.get("cpu_offload", False):
             logger.debug("CPU offloading model")
